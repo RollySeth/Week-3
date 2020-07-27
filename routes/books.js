@@ -16,7 +16,7 @@ router.post("/", async (req, res, next) => {
       if (e instanceof bookDAO.BadDataError) {
         res.status(400).send(e.message);
       } else {
-        res.status(500).send(e.message);
+        res.status(400).send('Duplicate: ISBN already exists');
       }
     }
   }
@@ -25,20 +25,68 @@ router.post("/", async (req, res, next) => {
 // Read - single book
 router.get("/:id", async (req, res, next) => {
   const book = await bookDAO.getById(req.params.id);
+
   if (book) {
     res.json(book);
   } else {
     res.sendStatus(404);
   }
+
 });
 
 // Read - all books
-router.get("/", async (req, res, next) => {
-  let { page, perPage } = req.query;
+router.get("/", async (req, res, next) => 
+{
+  let { page, perPage,authorId } = req.query;
   page = page ? Number(page) : 0;
   perPage = perPage ? Number(perPage) : 10;
-  const books = await bookDAO.getAll(page, perPage);
+  try
+  {
+    if(authorId)
+    {
+    const books = await bookDAO.getAllByAuthorId(page, perPage,authorId);
+    res.json(books);
+    }
+    else
+    {
+    const books = await bookDAO.getAll(page, perPage);
+    res.json(books);
+    }
+  } 
+  catch(e)
+  {
+    res.status(500).send(e.message);
+  }
+});
+
+//Search
+
+
+router.get("/search", async (req, res, next) => {
+
+  let { page, perPage, query } = req.query;
+  page = page ? Number(page) : 0;
+  perPage = perPage ? Number(perPage) : 10;
+  console.log($req.query);
+  if(query)
+  {
+ //  const books= await bookDAO.getByQuerySearch(query);
+  const books = await bookDAO.getByQuerySearch(page, perPage,query);
   res.json(books);
+  }
+  else{
+    res.sendStatus(404);
+  }
+  
+});
+//Author Stats
+
+router.get("/authors/stats", async (req, res, next) => {
+  const {authorInfo} =req.query;
+  const stats = await bookDAO.getAuthorStats(authorInfo);
+    res.json(stats);
+ 
+
 });
 
 // Update
@@ -55,7 +103,7 @@ router.put("/:id", async (req, res, next) => {
       if (e instanceof bookDAO.BadDataError) {
         res.status(400).send(e.message);
       } else {
-        res.status(500).send(e.message);
+        res.status(500).send('e.message');
       }
     }
   }
